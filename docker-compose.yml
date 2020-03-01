@@ -6,12 +6,16 @@ services:
         dockerfile: ./docker/nginx/Dockerfile
     restart: unless-stopped
     ports:
-        - "80:80"
+        - "30-50:80"
     volumes:
+        - ./conf:/conf/
         - ./app:/app:cached
         - ./docker/conf/nginx/site.conf:/etc/nginx/conf.d/default.conf:cached
     links:
         - php
+    depends_on:
+        - mysql
+    
   php:
     build:
         context: .
@@ -21,14 +25,16 @@ services:
         - ./app:/app:cached
         - ./docker/conf/php/www.conf:/usr/local/etc/php-fpm.d/www.conf:cached
     links:
-        - mysql 
+        - mysql
 
   mysql:
     image: mysql
     command: --default-authentication-plugin=mysql_native_password
     restart: unless-stopped
     volumes:
+        - ./docker/my.cnf:/etc/my.cnf
         - ./conf:/conf/
+        - /opt/mysql_data:/var/lib/mysql/
     environment:
         MYSQL_DATABASE: 'prep50mock'
         MYSQL_USER: 'root'
@@ -45,9 +51,3 @@ services:
     environment:
         - PMA_ARBITRARY=0
         - PMA_HOST=mysql
-
-  redis:
-    image: 'bitnami/redis:latest'
-    restart: unless-stopped
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
